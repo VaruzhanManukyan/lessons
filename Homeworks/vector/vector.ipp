@@ -1,32 +1,40 @@
 #ifndef LEARNING_CPP_VECTOR_IPP
 #define LEARNING_CPP_VECTOR_IPP
 
+#include <limits>
+
 #include "vector.hpp"
 
-template<typename T>
+template <typename T>
 T *Vector<T>::allocate(std::size_t size) {
     if (size == 0) {
         return nullptr;
     }
-    void *memory = ::operator new(size * sizeof(T));
-    return static_cast<T *>(memory);
+
+    const std::size_t maxCount = std::numeric_limits<std::size_t>::max() / sizeof(T);
+    if (size > maxCount) {
+        throw std::bad_alloc();
+    }
+
+    void* memory = ::operator new(size * sizeof(T));
+    return static_cast<T*>(memory);
 }
 
-template<typename T>
-void Vector<T>::deallocate(T *pointer) noexcept {
+template <typename T>
+void Vector<T>::deallocate(T* pointer) noexcept {
     if (pointer) {
-        ::operator delete(static_cast<void *>(pointer));
+        ::operator delete(static_cast<void*>(pointer));
     }
 }
 
-template<typename T>
-void Vector<T>::destroyRange(T *begin, T *end) noexcept {
+template <typename T>
+void Vector<T>::destroyRange(T* begin, T* end) noexcept {
     while (begin != end) {
         (--end)->~T();
     }
 }
 
-template<typename T>
+template <typename T>
 std::size_t Vector<T>::grow(std::size_t size, std::size_t capacity) noexcept {
     if (capacity == 0) {
         return 1;
@@ -40,12 +48,13 @@ std::size_t Vector<T>::grow(std::size_t size, std::size_t capacity) noexcept {
     return newCapacity;
 }
 
-template<typename T>
+template <typename T>
 void Vector<T>::reallocateAndMove(std::size_t newCapacity) {
-    T *newStart = allocate(newCapacity);
-    T *current = newStart;
-    T *oldStart = start;
-    T *oldFinish = finish;
+    T* newStart = allocate(newCapacity);
+    T* current = newStart;
+    T* oldStart = start;
+    T* oldFinish = finish;
+    std::size_t oldSize = static_cast<std::size_t>(oldFinish - oldStart);
 
     try {
         for (T *it = oldStart; it != oldFinish; ++it, ++current) {
@@ -62,13 +71,12 @@ void Vector<T>::reallocateAndMove(std::size_t newCapacity) {
     }
     deallocate(oldStart);
 
-    std::size_t oldSize = static_cast<std::size_t>(oldFinish - oldStart);
     start = newStart;
     finish = newStart + oldSize;
     endCapacity = newStart + newCapacity;
 }
 
-template<typename T>
+template <typename T>
 Vector<T>::Vector(std::size_t size) {
     if (size == 0) {
         return;
@@ -92,8 +100,8 @@ Vector<T>::Vector(std::size_t size) {
     endCapacity = start + size;
 }
 
-template<typename T>
-Vector<T>::Vector(const Vector &other) {
+template <typename T>
+Vector<T>::Vector(const Vector& other) {
     std::size_t size = other.size();
     if (size == 0) {
         return;
@@ -116,12 +124,12 @@ Vector<T>::Vector(const Vector &other) {
     endCapacity = start + size;
 }
 
-template<typename T>
-Vector<T>::Vector(Vector &&other) noexcept : start(other.start), finish(other.finish), endCapacity(other.endCapacity) {
+template <typename T>
+Vector<T>::Vector(Vector&& other) noexcept : start(other.start), finish(other.finish), endCapacity(other.endCapacity) {
     other.start = other.finish = other.endCapacity = nullptr;
 }
 
-template<typename T>
+template <typename T>
 Vector<T>::Vector(std::initializer_list<T> initializers) {
     std::size_t size = initializers.size();
     if (size == 0) {
@@ -146,7 +154,7 @@ Vector<T>::Vector(std::initializer_list<T> initializers) {
     endCapacity = start + size;
 }
 
-template<typename T>
+template <typename T>
 Vector<T>::~Vector() noexcept {
     clear();
     deallocate(start);
@@ -154,7 +162,7 @@ Vector<T>::~Vector() noexcept {
 }
 
 template<typename T>
-Vector<T> &Vector<T>::operator=(const Vector &other) {
+Vector<T> &Vector<T>::operator=(const Vector& other) {
     if (this == &other) {
         return *this;
     }
@@ -164,8 +172,8 @@ Vector<T> &Vector<T>::operator=(const Vector &other) {
     return *this;
 }
 
-template<typename T>
-Vector<T> &Vector<T>::operator=(Vector &&other) noexcept {
+template <typename T>
+Vector<T> &Vector<T>::operator=(Vector&& other) noexcept {
     if (this == &other) {
         return *this;
     }
@@ -181,7 +189,7 @@ Vector<T> &Vector<T>::operator=(Vector &&other) noexcept {
 }
 
 template<typename T>
-void Vector<T>::swap(Vector &other) noexcept {
+void Vector<T>::swap(Vector& other) noexcept {
     std::swap(start, other.start);
     std::swap(finish, other.finish);
     std::swap(endCapacity, other.endCapacity);
@@ -266,7 +274,7 @@ const T *Vector<T>::data() const noexcept {
 
 template<typename T>
 template<typename... Args>
-void Vector<T>::emplace_back(Args &&... args) {
+void Vector<T>::emplace_back(Args&&... args) {
     if (finish == endCapacity) {
         reserve(grow(size(), capacity()));
     }
@@ -274,13 +282,42 @@ void Vector<T>::emplace_back(Args &&... args) {
 }
 
 template<typename T>
-void Vector<T>::push_back(const T &value) {
+void Vector<T>::push_back(const T& value) {
     emplace_back(value);
 }
 
 template<typename T>
-void Vector<T>::push_back(T &&value) {
+void Vector<T>::push_back(T&& value) {
     emplace_back(std::move(value));
+}
+
+template <typename T>
+template <typename U>
+void Vector<T>::insert(T* position, U&& value) {
+    std::size_t offset = static_cast<std::size_t>(position - start);
+
+    if (finish == endCapacity) {
+        reallocateAndMove(grow(size(), capacity()));
+    }
+
+    T* newPosition = start + offset;
+
+    if (newPosition == finish) {
+        ::new(static_cast<void*>(finish)) T(std::forward<U>(value));
+        ++finish;
+        return;
+    }
+
+    ::new(static_cast<void*>(finish)) T(std::move(*(finish - 1)));
+    ++finish;
+
+    T* it = finish - 2;
+    while (it >= newPosition) {
+        *(it + 1) = std::move(*it);
+        --it;
+    }
+
+    *(newPosition) = std::forward<U>(value);
 }
 
 template<typename T>
@@ -296,7 +333,7 @@ T *Vector<T>::begin() noexcept {
 }
 
 template<typename T>
-void Vector<T>::resize(std::size_t newSize, const T &value) noexcept {
+void Vector<T>::resize(std::size_t newSize, const T& value) {
     std::size_t oldSize = size();
     if (newSize < oldSize) {
         destroyRange(start + newSize, finish);
@@ -312,7 +349,7 @@ void Vector<T>::resize(std::size_t newSize, const T &value) noexcept {
 }
 
 template<typename T>
-void Vector<T>::shrink_to_fit() noexcept {
+void Vector<T>::shrink_to_fit() {
     std::size_t realSize = size();
 
     if (realSize == 0) {

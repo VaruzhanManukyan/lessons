@@ -10,7 +10,7 @@ private:
 
     static T* allocate(std::size_t size);
     static void deallocate(T* pointer) noexcept;
-
+    
     void destroyRange(T* begin, T* end) noexcept;
     std::size_t grow(std::size_t size, std::size_t capacity) noexcept;
     void reallocateAndMove(std::size_t newCapacity);
@@ -50,10 +50,13 @@ public:
     void push_back(const T& value);
     void push_back(T&& value);
 
+    template <typename U>
+    void insert(T* position, U&& value);
+
     void pop_back() noexcept;
 
-    void resize(std::size_t newSize, const T& value) noexcept;
-    void shrink_to_fit() noexcept;
+    void resize(std::size_t newSize, const T& value);
+    void shrink_to_fit();
 
     T* begin() noexcept;
     T* end() noexcept;
