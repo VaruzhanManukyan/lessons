@@ -1,0 +1,1 @@
+inline int globalCounter = 0;

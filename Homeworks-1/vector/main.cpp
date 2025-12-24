@@ -2,6 +2,8 @@
 #include "vector.hpp"
 
 int main() {
+    std::cout << a << std::endl;
+
     Vector<int> array;
 
     for (int i = 1; i <= 5; ++i) {

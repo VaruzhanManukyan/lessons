@@ -1,10 +1,10 @@
-#include <iostream>
-#include "vector/vector.hpp"
+#pragma once
+#include <vector>
 
 template <typename Iterator>
 void merge(Iterator begin, Iterator middle, Iterator end) {
     using Value = typename std::iterator_traits<Iterator>::value_type;
-    Vector<Value> buffer;
+    std::vector<Value> buffer;
     buffer.reserve(std::distance(begin, end));
 
     Iterator iterator1 = begin;
@@ -70,15 +70,4 @@ void mergeSortIterative(Iterator begin, Iterator end) {
             }
         }
     }
-}
-
-int main() {
-    Vector<int> array = {5, 4, 56, 89, 7, 23, 120, 35, 53};
-    mergeSortIterative(array.begin(), array.end());
-
-    for (std::size_t i = 0; i < array.size(); ++i) {
-        std::cout << array[i] << " ";
-    }
-
-    return 0;
 }

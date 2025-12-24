@@ -1,6 +1,8 @@
 #ifndef LEARNING_CPP_VECTOR_HPP
 #define LEARNING_CPP_VECTOR_HPP
 
+inline int a = 9;
+
 template <typename T>
 class Vector {
 private:

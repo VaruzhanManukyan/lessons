@@ -1,0 +1,1 @@
+static int globalCounter = 0;

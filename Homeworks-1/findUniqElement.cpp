@@ -10,7 +10,16 @@ T findUniqElement(Iterator begin, Iterator end) {
     return result;
 }
 
+class A {
+private:
+    int a;
+    int b;
+};
+
 int main() {
+    const char* a = "Hello";
+    std::cout << a << std::endl;
+
     std::vector<int> array = {2, 3, 5, 4, 5, 4, 9, 3, 2};
     int uniq = findUniqElement<std::vector<int>::iterator, int>(array.begin(), array.end());
     std::cout << uniq << std::endl;
